@@ -19,16 +19,6 @@ void Philosopher::Eat() {
 
 // Acquire left_fork_ and right_fork_
 void Philosopher::AcquireForks() {
-  // left_fork_.lock();
-  // bool is_last = table_.ToRight(seat_) < seat_;
-  // if (is_last) {
-  //   left_fork_.unlock();
-  // }
-  // right_fork_.lock();
-  // if (is_last) {
-  //   left_fork_.lock();
-  // }
-
   if (table_.ToRight(seat_) < seat_) {
     right_fork_.lock();
     left_fork_.lock();
