@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <twist/ed/stdlike/atomic.hpp>
 #include <twist/ed/wait/sys.hpp>
 
@@ -17,7 +16,7 @@ class Mutex {
  public:
   void Lock() {
     static const auto kInitTempVal =
-        static_cast<decltype(locked_)::value_type>(States::Unlocked);
+        static_cast<decltype(locked_.load())>(States::Unlocked);
     auto temp = kInitTempVal;
     while (!locked_.compare_exchange_strong(temp, States::Locked)) {
       twist::ed::Wait(locked_, States::Locked);
