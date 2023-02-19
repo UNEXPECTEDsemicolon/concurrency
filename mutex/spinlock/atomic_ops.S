@@ -8,8 +8,6 @@
 .globl FUNCTION_NAME(AtomicStore)
 .globl FUNCTION_NAME(AtomicExchange)
 
-# Solution starts here
-
 FUNCTION_NAME(AtomicLoad):
     movq (%rdi), %rax
     retq
