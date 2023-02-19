@@ -15,12 +15,8 @@ class Mutex {
 
  public:
   void Lock() {
-    static const auto kInitTempVal =
-        static_cast<decltype(locked_.load())>(States::Unlocked);
-    auto temp = kInitTempVal;
-    while (!locked_.compare_exchange_strong(temp, States::Locked)) {
+    while (locked_.exchange(States::Locked) == States::Locked) {
       twist::ed::Wait(locked_, States::Locked);
-      temp = kInitTempVal;
     }
   }
 
