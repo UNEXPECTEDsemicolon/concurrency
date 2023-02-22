@@ -15,19 +15,24 @@ class Mutex {
 
  public:
   void Lock() {
+    waiters_++;
     while (locked_.exchange(States::Locked) == States::Locked) {
       twist::ed::Wait(locked_, States::Locked);
     }
+    waiters_--;
   }
 
   void Unlock() {
     auto wake_key = twist::ed::PrepareWake(locked_);
     locked_.store(States::Unlocked);
-    twist::ed::WakeAll(wake_key);
+    if (waiters_ != 0) {
+      twist::ed::WakeAll(wake_key);
+    }
   }
 
  private:
   twist::ed::stdlike::atomic<uint32_t> locked_{States::Unlocked};
+  twist::ed::stdlike::atomic<uint32_t> waiters_{0};
 };
 
 }  // namespace stdlike
