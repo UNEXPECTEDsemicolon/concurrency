@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <iterator>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <twist/ed/stdlike/atomic.hpp>
 #include <twist/ed/wait/sys.hpp>
@@ -29,26 +30,29 @@ class CondVar {
   }
 
   void NotifyOne() {
-    my_mutex_.lock();
+    std::lock_guard guard(my_mutex_);
     if (!waiters_.empty()) {
-      auto& ind = *waiters_.front();  // TODO:
-      waiters_.pop_front();
-      my_mutex_.unlock();
-      auto wake_key = twist::ed::PrepareWake(ind);
-      ind.store(0);
-      twist::ed::WakeOne(wake_key);
-    } else {
-      my_mutex_.unlock();
+      NotifyOneImpl();
     }
   }
 
   void NotifyAll() {
+    std::lock_guard guard(my_mutex_);
     while (!waiters_.empty()) {
-      NotifyOne();
+      NotifyOneImpl();
     }
   }
 
  private:
+  void NotifyOneImpl() {
+    auto& ind = *waiters_.front();  // TODO:
+    waiters_.pop_front();
+    // my_mutex_.unlock();
+    auto wake_key = twist::ed::PrepareWake(ind);
+    ind.store(0);
+    twist::ed::WakeOne(wake_key);
+  }
+
   std::list<std::shared_ptr<twist::ed::stdlike::atomic<uint32_t>>> waiters_;
   twist::ed::stdlike::atomic<uint32_t> locked_{0};
   Mutex my_mutex_;
