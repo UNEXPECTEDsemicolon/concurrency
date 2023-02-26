@@ -1,13 +1,10 @@
 #pragma once
 
-#include <sys/types.h>
-#include <iterator>
 #include <memory>
 #include <mutex>
 #include <queue>
 #include <twist/ed/stdlike/atomic.hpp>
 #include <twist/ed/wait/sys.hpp>
-#include <list>
 #include "mutex.hpp"
 
 #include <cstdint>
@@ -47,7 +44,6 @@ class CondVar {
   void NotifyOneImpl() {
     auto& ind = *waiters_.front();  // TODO:
     waiters_.pop();
-    // my_mutex_.unlock();
     auto wake_key = twist::ed::PrepareWake(ind);
     ind.store(0);
     twist::ed::WakeOne(wake_key);

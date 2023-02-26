@@ -26,7 +26,7 @@ class Mutex {
     auto wake_key = twist::ed::PrepareWake(locked_);
     locked_.store(States::Unlocked);
     if (waiters_ != 0) {
-      twist::ed::WakeAll(wake_key);
+      twist::ed::WakeOne(wake_key);
     }
   }
 
