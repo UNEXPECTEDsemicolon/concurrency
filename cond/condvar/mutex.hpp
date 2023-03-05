@@ -8,15 +8,46 @@
 
 namespace stdlike {
 
-class Mutex : public twist::ed::stdlike::mutex {
+class Mutex {
  public:
   void Lock() {
-    return lock();
+    uint32_t temp = States::Unlocked;
+    if (state_.compare_exchange_strong(temp, States::Locked)) {
+      return;
+    }
+    while (state_.exchange(States::Queue) != States::Unlocked) {
+      twist::ed::Wait(state_, States::Queue);
+    }
   }
 
   void Unlock() {
-    return unlock();
+    if (state_.fetch_sub(1) == States::Locked) {
+      return;
+    }
+    auto wake_key = twist::ed::PrepareWake(state_);
+    state_.store(States::Unlocked);
+    twist::ed::WakeOne(wake_key);
   }
+
+  // BasicLockable
+  // https://en.cppreference.com/w/cpp/named_req/BasicLockable
+
+  void lock() {  // NOLINT
+    Lock();
+  }
+
+  void unlock() {  // NOLINT
+    Unlock();
+  }
+
+ private:
+  enum States : uint32_t {
+    Unlocked = 0,
+    Locked = 1,
+    Queue = 2,
+  };
+
+  twist::ed::stdlike::atomic<uint32_t> state_{States::Unlocked};
 };
 
 }  // namespace stdlike
