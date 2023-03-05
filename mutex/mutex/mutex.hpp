@@ -8,31 +8,34 @@
 namespace stdlike {
 
 class Mutex {
-  enum States : uint32_t {
-    Locked,
-    Unlocked,
-  };
-
  public:
   void Lock() {
-    waiters_++;
-    while (locked_.exchange(States::Locked) == States::Locked) {
-      twist::ed::Wait(locked_, States::Locked);
+    uint32_t temp = States::Unlocked;
+    if (state_.compare_exchange_strong(temp, States::Locked)) {
+      return;
     }
-    waiters_--;
+    while (state_.exchange(States::Queue) != States::Unlocked) {
+      twist::ed::Wait(state_, States::Queue);
+    }
   }
 
   void Unlock() {
-    auto wake_key = twist::ed::PrepareWake(locked_);
-    locked_.store(States::Unlocked);
-    if (waiters_ != 0) {
-      twist::ed::WakeAll(wake_key);
+    if (state_.fetch_sub(1) == States::Locked) {
+      return;
     }
+    auto wake_key = twist::ed::PrepareWake(state_);
+    state_.store(States::Unlocked);
+    twist::ed::WakeOne(wake_key);
   }
 
  private:
-  twist::ed::stdlike::atomic<uint32_t> locked_{States::Unlocked};
-  twist::ed::stdlike::atomic<uint32_t> waiters_{0};
+  enum States : uint32_t {
+    Unlocked = 0,
+    Locked = 1,
+    Queue = 2,
+  };
+
+  twist::ed::stdlike::atomic<uint32_t> state_{States::Unlocked};
 };
 
 }  // namespace stdlike
