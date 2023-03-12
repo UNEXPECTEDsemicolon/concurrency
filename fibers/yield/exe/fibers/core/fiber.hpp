@@ -16,11 +16,10 @@ class Fiber {
   void Schedule();
 
   // Task
-  void Run();
-
-  static Fiber* Self();
 
  private:
+  void Run();
+
   coro::Coroutine coroutine_;
   coro::Coroutine::CallStack* co_callstack_ = nullptr;
   Scheduler* scheduler_;

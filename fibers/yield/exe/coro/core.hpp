@@ -42,8 +42,6 @@ class Coroutine : private sure::ITrampoline {
   CallStack grandparent_{.routine_ctx = &self_context_, .parent = nullptr};
   std::exception_ptr exception_;
   bool is_completed_ = false;
-  // std::function<CallStack*()> callstack_getter_;
-  // Coroutine::CallStack* trans_thread_callstack_ = nullptr;
 };
 
 }  // namespace exe::coro

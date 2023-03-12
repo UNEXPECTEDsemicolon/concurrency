@@ -5,8 +5,6 @@
 
 namespace exe::fibers {
 
-static twist::ed::ThreadLocalPtr<Fiber> running_fiber;
-
 Fiber::Fiber(Scheduler& scheduler, Routine routine)
     : coroutine_(std::move(routine)),
       scheduler_(&scheduler) {
@@ -19,22 +17,14 @@ void Fiber::Schedule() {
 }
 
 void Fiber::Run() {
-  if (!coroutine_.IsCompleted()) {
-    running_fiber = this;
-    coro::Coroutine::GetCallstack() = co_callstack_;
-    coroutine_.Resume();
-    co_callstack_ = coro::Coroutine::GetCallstack();
-  }
+  coro::Coroutine::GetCallstack() = co_callstack_;
+  coroutine_.Resume();
+  co_callstack_ = coro::Coroutine::GetCallstack();
   if (!coroutine_.IsCompleted()) {
     Schedule();
-    // running_fiber = nullptr;
   } else {
     delete this;
   }
-}
-
-Fiber* Fiber::Self() {
-  return running_fiber;
 }
 
 }  // namespace exe::fibers

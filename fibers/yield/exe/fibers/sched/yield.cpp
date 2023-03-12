@@ -3,7 +3,6 @@
 namespace exe::fibers {
 
 void Yield() {
-  // fibers::Fiber::Self()->Schedule();
   coro::Coroutine::Suspend();
 }
 

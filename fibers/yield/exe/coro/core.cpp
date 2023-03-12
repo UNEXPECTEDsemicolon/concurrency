@@ -1,6 +1,5 @@
-#include "exe/coro/core.hpp"
+#include <exe/coro/core.hpp>
 
-#include <cstddef>
 #include <twist/ed/local/ptr.hpp>
 
 #include <wheels/core/assert.hpp>
@@ -8,7 +7,7 @@
 
 namespace exe::coro {
 
-twist::ed::ThreadLocalPtr<Coroutine::CallStack> co_callstack;
+static twist::ed::ThreadLocalPtr<Coroutine::CallStack> co_callstack;
 
 Coroutine::Coroutine(Routine routine)
     : routine_(std::move(routine)),
@@ -17,15 +16,12 @@ Coroutine::Coroutine(Routine routine)
 }
 
 void Coroutine::Resume() {
-  // co_callstack = trans_thread_callstack_;
   if (co_callstack == nullptr) {
     co_callstack = &grandparent_;
   }
   CallStack new_call{.routine_ctx = &routine_context_, .parent = co_callstack};
   co_callstack = &new_call;
-  // trans_thread_callstack_ = co_callstack;
   co_callstack->parent->routine_ctx->SwitchTo(routine_context_);
-  // trans_thread_callstack_ = co_callstack;
   if (exception_) {
     std::rethrow_exception(exception_);
   }
