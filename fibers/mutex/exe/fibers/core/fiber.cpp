@@ -39,7 +39,7 @@ void Fiber::Run() {
 }
 
 Fiber* Fiber::Self() {
-  return running_fiber;  // Not implemented
+  return running_fiber;
 }
 
 }  // namespace exe::fibers
