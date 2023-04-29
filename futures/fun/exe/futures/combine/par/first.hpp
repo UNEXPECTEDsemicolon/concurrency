@@ -3,6 +3,7 @@
 #include <exe/futures/types/future.hpp>
 #include <twist/ed/stdlike/atomic.hpp>
 #include <exe/executors/inline.hpp>
+#include "fmt/core.h"
 
 namespace exe::futures {
 
@@ -21,11 +22,11 @@ First(Future<Ts>... futures) {
       state->Produce(std::move(in));
     }
     if (workers->fetch_sub(1) == 1) {
-      delete workers;
-      delete value_set;
-      if (!in.has_value()) {
+      if (!value_set->load() && !in.has_value()) {
         state->Produce(std::move(in));
       }
+      delete workers;
+      delete value_set;
     }
   };
 

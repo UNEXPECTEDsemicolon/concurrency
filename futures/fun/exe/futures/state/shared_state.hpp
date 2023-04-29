@@ -25,9 +25,13 @@ class SharedState {
     }
   }
 
+  void ProduceVia(Result<T> result, executors::IExecutor& exe) {
+    exe_ = &exe;
+    return Produce(std::move(result));
+  }
+
   void ProduceNow(Result<T> result) {
-    exe_ = &executors::Inline();
-    Produce(std::move(result));
+    ProduceVia(std::move(result), executors::Inline());
   }
 
   void Consume(detail::Callback<T> cb) {
@@ -37,9 +41,13 @@ class SharedState {
     }
   }
 
+  void ConsumeVia(detail::Callback<T> cb, executors::IExecutor& exe) {
+    exe_ = &exe;
+    return Consume(std::move(cb));
+  }
+
   void ConsumeNow(detail::Callback<T> cb) {
-    exe_ = &executors::Inline();
-    Consume(std::move(cb));
+    return ConsumeVia(std::move(cb), executors::Inline());
   }
 
   inline executors::IExecutor& GetExecutor() {
