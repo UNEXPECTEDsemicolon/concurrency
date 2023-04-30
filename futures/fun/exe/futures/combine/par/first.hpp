@@ -30,7 +30,7 @@ First(Future<Ts>... futures) {
     }
   };
 
-  (std::move(futures).Consume(cb), ...);
+  (std::move(futures).ConsumeNow(cb), ...);  // Why now? Bad unit test Inline4
   return Future<T>{state};
 }
 
