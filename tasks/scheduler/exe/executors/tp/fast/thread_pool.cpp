@@ -1,35 +1,55 @@
-// #include <exe/executors/tp/fast/thread_pool.hpp>
+#include <cassert>
+#include <exe/executors/tp/fast/thread_pool.hpp>
+#include "exe/executors/hint.hpp"
+#include "exe/executors/tp/fast/worker.hpp"
+#include "twist/rt/layer/strand/local/ptr.hpp"
 
-// namespace exe::executors::tp::fast {
+namespace exe::executors::tp::fast {
 
-// ThreadPool::ThreadPool(size_t threads)
-//     : threads_(threads) {
-//   // Not implemented
-// }
+ThreadPool::ThreadPool(size_t threads)
+    : threads_(threads) {
+  for (size_t i = 0; i < threads_; ++i) {
+    workers_.emplace_back(*this, i);
+  }
+}
 
-// void ThreadPool::Start() {
-//   // Not implemented
-// }
+void ThreadPool::Start() {
+  for (auto& worker : workers_) {
+    worker.Start();
+  }
+}
 
-// ThreadPool::~ThreadPool() {
-//   // Not implemented
-// }
+ThreadPool::~ThreadPool() {
+  assert(stopped_);
+}
 
-// void ThreadPool::Submit(TaskBase* /*task*/) {
-//   // Not implemented
-// }
+void ThreadPool::Submit(TaskBase* task) {
+  Submit(task, SchedulerHint::UpToYou);
+}
 
-// void ThreadPool::Stop() {
-//   // Not implemented
-// }
+void ThreadPool::Submit(TaskBase* task, SchedulerHint hint) {
+  auto worker = Worker::Current();
+  if (worker != nullptr && &worker->Host() == this &&
+      hint != SchedulerHint::Global) {
+    worker->Push(task, hint);
+  } else {
+    global_tasks_.Push(task);
+  }
+}
 
-// PoolMetrics ThreadPool::Metrics() const {
-//   std::abort();  // Not implemented
-// }
+void ThreadPool::Stop() {
+  stopped_.store(true);
+  for (auto& worker : workers_) {
+    worker.Join();
+  }
+}
 
-// ThreadPool* ThreadPool::Current() {
-//   // Use Worker::Current()
-//   return nullptr;  // Not implemented
-// }
+PoolMetrics ThreadPool::Metrics() const {
+  std::abort();
+}
 
-// }  // namespace exe::executors::tp::fast
+ThreadPool* ThreadPool::Current() {
+  return Worker::Current() != nullptr ? &Worker::Current()->Host() : nullptr;
+}
+
+}  // namespace exe::executors::tp::fast

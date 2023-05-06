@@ -1,6 +1,6 @@
 #include <exe/fibers/sched/go.hpp>
 #include <exe/fibers/core/fiber.hpp>
-#include "exe/executors/executor.hpp"
+#include <exe/executors/executor.hpp>
 
 namespace exe::fibers {
 

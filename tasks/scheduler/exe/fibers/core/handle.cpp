@@ -1,6 +1,7 @@
 #include <exe/fibers/core/handle.hpp>
-
 #include <exe/fibers/core/fiber.hpp>
+
+#include <exe/executors/hint.hpp>
 
 #include <wheels/core/assert.hpp>
 
@@ -13,8 +14,8 @@ Fiber* FiberHandle::Release() {
   return std::exchange(fiber_, nullptr);
 }
 
-void FiberHandle::Schedule() {
-  Release()->Schedule();
+void FiberHandle::Schedule(executors::SchedulerHint hint) {
+  Release()->Schedule(hint);
 }
 
 void FiberHandle::Switch() {

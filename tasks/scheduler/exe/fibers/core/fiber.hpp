@@ -5,7 +5,6 @@
 #include <exe/fibers/core/awaiter.hpp>
 
 #include <exe/coro/core.hpp>
-#include "exe/fibers/core/scheduler.hpp"
 
 namespace exe::fibers {
 
@@ -17,7 +16,8 @@ class Fiber : exe::executors::TaskBase {
 
   void Suspend(IAwaiter& awaiter);
 
-  void Schedule();
+  void Schedule(
+      executors::SchedulerHint hint = executors::SchedulerHint::UpToYou);
   void Switch();
 
   // Task

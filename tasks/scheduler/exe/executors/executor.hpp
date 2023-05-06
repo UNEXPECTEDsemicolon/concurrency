@@ -11,6 +11,10 @@ struct IExecutor {
   // TODO: Support scheduler hints
   virtual void Submit(TaskBase* task) = 0;
 
+  virtual void Submit(TaskBase* task, SchedulerHint) {
+    Submit(task);
+  }
+
   static IExecutor* Current();
 
  protected:

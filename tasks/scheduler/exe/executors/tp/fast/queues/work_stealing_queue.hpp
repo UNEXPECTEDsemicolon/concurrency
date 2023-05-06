@@ -5,6 +5,7 @@
 
 #include <array>
 #include <span>
+#include "fmt/core.h"
 
 namespace exe::executors::tp::fast {
 
@@ -14,33 +15,30 @@ namespace exe::executors::tp::fast {
 template <size_t Capacity>
 class WorkStealingQueue {
   struct Slot {
-    twist::ed::stdlike::atomic<TaskBase*> item;
+    twist::ed::stdlike::atomic<TaskBase*> item = nullptr;
   };
 
  public:
   // Single producer
 
   bool TryPush(TaskBase* item) {
-    while (true) {
-      auto cur_end = end_.load();
-      if ((cur_end + kRealCapacity - begin_.load()) % kRealCapacity ==
-              Capacity ||
-          buffer_[cur_end].item.load()) {
-        return false;
-      }
-      auto next = (cur_end + 1) % (kRealCapacity);
-      if (end_.compare_exchange_strong(cur_end, next)) {
-        buffer_[cur_end].item.store(item);
-        return true;
-      }
+    auto begin = begin_.load();
+    auto end = end_.load();
+    if ((end - begin) == Capacity) {
+      return false;
     }
+    buffer_[end % Capacity].item.store(item);
+    end_.fetch_add(1);
+    return true;
   }
 
   // For grabbing from global queue / for stealing
   // Should always succeed
   void PushMany(std::span<TaskBase*> buffer) {
     for (auto item : buffer) {
-      TryPush(item);
+      while (!TryPush(item)) {
+        fmt::println("here");
+      }
     }
   }
 
@@ -49,13 +47,14 @@ class WorkStealingQueue {
   // Returns nullptr if queue is empty
   TaskBase* TryPop() {
     while (true) {
-      auto cur_begin = begin_.load();
-      if (cur_begin == end_.load() || !buffer_[cur_begin].item.load()) {
+      auto begin = begin_.load();
+      auto end = end_.load();
+      if (begin == end) {
         return nullptr;
       }
-      auto next = (cur_begin + 1) % kRealCapacity;
-      if (begin_.compare_exchange_strong(cur_begin, next)) {
-        return buffer_[cur_begin].item.exchange(nullptr);
+      auto res = buffer_[begin % Capacity].item.load();
+      if (begin_.compare_exchange_strong(begin, begin + 1)) {
+        return res;
       }
     }
   }
@@ -64,20 +63,23 @@ class WorkStealingQueue {
   // Returns number of tasks in `out_buffer`
   size_t Grab(std::span<TaskBase*> out_buffer) {
     for (size_t i = 0; i < out_buffer.size(); ++i) {
-      out_buffer[i] = TryPop();
-      if (out_buffer[i] == nullptr) {
+      if (!(out_buffer[i] = TryPop())) {
         return i;
       }
     }
     return out_buffer.size();
   }
 
- private:
-  inline static const auto kRealCapacity = Capacity + 1;
+  inline size_t Size() const {
+    return end_.load() - begin_.load();
+  }
 
-  twist::ed::stdlike::atomic<size_t> begin_ = 0;
-  twist::ed::stdlike::atomic<size_t> end_ = 0;
-  std::array<Slot, kRealCapacity> buffer_;
+ private:
+  // inline static const auto kRealCapacity = Capacity + 1;
+
+  alignas(std::max_align_t) twist::ed::stdlike::atomic<size_t> begin_ = 0;
+  alignas(std::max_align_t) twist::ed::stdlike::atomic<size_t> end_ = 0;
+  alignas(std::max_align_t) std::array<Slot, Capacity> buffer_;
 };
 
 }  // namespace exe::executors::tp::fast

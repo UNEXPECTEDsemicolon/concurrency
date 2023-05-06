@@ -1,7 +1,6 @@
 #include <exe/fibers/core/fiber.hpp>
 
 #include <twist/ed/local/ptr.hpp>
-#include "exe/fibers/core/scheduler.hpp"
 
 namespace exe::fibers {
 
@@ -17,8 +16,8 @@ void Fiber::Suspend(IAwaiter& awaiter) {
   coro::Coroutine::Suspend();
 }
 
-void Fiber::Schedule() {
-  scheduler_.Submit(this);
+void Fiber::Schedule(executors::SchedulerHint hint) {
+  scheduler_.Submit(this, hint);
 }
 
 void Fiber::Switch() {

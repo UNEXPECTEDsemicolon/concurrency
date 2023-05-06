@@ -35,10 +35,10 @@ class GlobalQueue {
   }
 
   // Returns number of items in `out_buffer`
-  size_t Grab(std::span<TaskBase*> out_buffer, size_t workers) {
+  size_t Grab(std::span<TaskBase*> out_buffer) {
     size_t res = 0;
     std::lock_guard guard(mutex_);
-    while (!queue_.IsEmpty() && res < workers) {
+    while (!queue_.IsEmpty() && res < out_buffer.size()) {
       out_buffer[res++] = queue_.PopFront();
     }
     return res;
